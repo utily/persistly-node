@@ -1,6 +1,6 @@
 {
 	"name": "persistly",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"description": "Document based persistency layer on top of Azure Cosmos DB. ",
 	"author": "PayFunc",
 	"repository": {

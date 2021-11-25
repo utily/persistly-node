@@ -1,4 +1,4 @@
-import * as persistly from "../index"
+import { Filter } from "./index"
 
 describe("Filter", () => {
 	const partialArgument = {
@@ -11,7 +11,7 @@ describe("Filter", () => {
 	}
 	it("EasyMongo", () => {
 		const test = { id: "id02" }
-		expect(persistly.Filter.toMongo(test, "*")).toEqual({ id: "id02" })
+		expect(Filter.toMongo(test, "*")).toEqual({ id: "id02" })
 	})
 	it("toMongo", () => {
 		const argument = {
@@ -21,11 +21,11 @@ describe("Filter", () => {
 			other: { value: 13.37 },
 			not: false,
 		}
-		const filter = persistly.Filter.toMongo(argument, "id", "shard")
+		const filter = Filter.toMongo(argument, "id", "shard")
 		expect(filter).toEqual({ id: "ab01", shard: "shard01", "field.nested": 42 })
 	})
 	it("TestPartial toMongo", () => {
-		const filter = persistly.Filter.toMongo(partialArgument, "*")
+		const filter = Filter.toMongo(partialArgument, "*")
 		expect(filter).toEqual({
 			id: "ab01",
 			shard: "shard01",
@@ -44,7 +44,7 @@ describe("Filter", () => {
 			field: { nested: { $eq: 42 } },
 			something: { $isset: true },
 		}
-		const filter = persistly.Filter.toMongo(testing, "id")
+		const filter = Filter.toMongo(testing, "id")
 		expect(filter).toEqual({
 			"field.nested": 42,
 			id: "ab01",
@@ -55,6 +55,29 @@ describe("Filter", () => {
 	})
 	it("elemMatch", () => {
 		const test = { array: { $elemMatch: { created: { $gt: 2 } } } }
-		expect(persistly.Filter.toMongo(test, "*")).toEqual({ array: { $elemMatch: { created: { $gt: 2 } } } })
+		expect(Filter.toMongo(test, "*")).toEqual({ array: { $elemMatch: { created: { $gt: 2 } } } })
+	})
+	it("Filter Update split", () => {
+		const argument = {
+			id: "ab01",
+			shard: { $eq: "shard01" },
+			field: { nested: { $eq: 42 }, $set: 1337 },
+			other: { value: 13.37 },
+			not: false,
+			name: "test",
+			property: { nested: 42 },
+			remove: { $unset: true },
+			filter: { $eq: 42 },
+			range: { $gt: 42, $lte: 1337 },
+			array: ["element0", "element1"],
+		}
+		const filter = Filter.toMongo(argument, "id", "shard")
+		expect(filter).toEqual({
+			id: "ab01",
+			shard: "shard01",
+			filter: 42,
+			"field.nested": 42,
+			range: { $gt: 42, $lte: 1337 },
+		})
 	})
 })

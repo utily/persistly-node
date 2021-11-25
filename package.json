@@ -1,5 +1,5 @@
 {
-	"name": "persistly",
+	"name": "persistly-node",
 	"version": "0.1.17",
 	"description": "Document based persistency layer on top of Azure Cosmos DB. ",
 	"author": "PayFunc",
@@ -56,7 +56,8 @@
 		"@types/mongodb": "^3.5.20",
 		"authly": "0.1.7",
 		"mongodb": "^3.5.8",
-		"mongodb-memory-server": "^6.6.1"
+		"mongodb-memory-server": "^6.6.1",
+		"persistly-model": "^0.0.5"
 	},
 	"devDependencies": {
 		"@types/jest": "^26.0.0",

@@ -1,26 +1,25 @@
 import * as authly from "authly"
+import * as model from "persistly-model"
 import * as mongo from "mongodb"
-import { Document } from "./Document"
 import { Event } from "./Event"
 import { Filter } from "./Filter"
-import { Options } from "./Options"
 import { Update } from "./Update"
 
-export class Collection<T extends Document, Shard extends keyof T & string> {
-	private hexadecmialIdLength: number
+export class Collection<T extends model.Document, Shard extends keyof T & string> implements model.Collection<T> {
+	private hexadecimalIdLength: number
 	readonly updated = new Event<T[Shard][]>()
 	constructor(private backend: mongo.Collection, readonly shard: Shard, readonly idLength: 4 | 8 | 12 | 16 = 16) {
-		this.hexadecmialIdLength = (idLength * 3) / 2
+		this.hexadecimalIdLength = (idLength * 3) / 2
 	}
-	async get(filter: Filter<T>): Promise<T | undefined> {
+	async get(filter: model.Filter<T>): Promise<T | undefined> {
 		filter = Filter.toMongo(filter ?? {}, "*")
-		if (Document.is(filter))
+		if (model.Document.is(filter))
 			filter = this.fromDocument(filter)
 		return this.toDocument(await this.backend.findOne(filter))
 	}
-	async list(filter?: Filter<T>): Promise<T[]> {
+	async list(filter?: model.Filter<T>): Promise<T[]> {
 		filter = Filter.toMongo(filter ?? {}, "*")
-		if (Document.is(filter))
+		if (model.Document.is(filter))
 			filter = this.fromDocument(filter)
 		return this.backend.find(filter).map<T>(this.toDocument.bind(this)).toArray()
 	}
@@ -46,9 +45,11 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 		return result
 	}
 
-	private async deleteHelper(document: Filter<T> & Document): Promise<[T[Shard][], T | undefined]>
-	private async deleteHelper(document: Filter<T>): Promise<[T[Shard][], T | number | undefined]>
-	private async deleteHelper(document: Filter<T> & Document): Promise<[T[Shard][], T | number | undefined]> {
+	private async deleteHelper(document: model.Filter<T> & model.Document): Promise<[T[Shard][], T | undefined]>
+	private async deleteHelper(document: model.Filter<T>): Promise<[T[Shard][], T | number | undefined]>
+	private async deleteHelper(
+		document: model.Filter<T> & model.Document
+	): Promise<[T[Shard][], T | number | undefined]> {
 		let result: T | number | undefined
 		let shards: T[Shard][] | undefined
 		const filter: {
@@ -82,16 +83,16 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 		}
 		return [shards ?? [], result]
 	}
-	async delete(document: Filter<T> & Document): Promise<T | undefined>
-	async delete(document: Filter<T>): Promise<T | number | undefined>
-	async delete(documents: (Filter<T> & Document)[]): Promise<T[]>
-	async delete(documents: Filter<T> | Filter<T>[]): Promise<T | number | undefined | T[]> {
+	async delete(document: model.Filter<T> & model.Document): Promise<T | undefined>
+	async delete(document: model.Filter<T>): Promise<T | number | undefined>
+	async delete(documents: (model.Filter<T> & model.Document)[]): Promise<T[]>
+	async delete(documents: model.Filter<T> | model.Filter<T>[]): Promise<T | number | undefined | T[]> {
 		let result: [T[Shard][], T | number | undefined | T[]]
 		if (Array.isArray(documents))
 			if (documents.length > 0)
 				result = (await Promise.all(documents.map(document => this.deleteHelper(document)))).reduce<[T[Shard][], T[]]>(
 					(r, c) =>
-						Document.is(c[1])
+						model.Document.is(c[1])
 							? [
 									[...r[0], ...c[0]],
 									[...r[1], c[1]],
@@ -108,24 +109,27 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 		return result[1]
 	}
 
-	private async updateHelper(document: Filter<T> & Update<T> & Document): Promise<[T[Shard][], T | undefined]>
-	private async updateHelper(document: Filter<T> & Update<T> & Options & Document): Promise<[T[Shard][], T | undefined]>
-	private async updateHelper(document: Filter<T> & Update<T>): Promise<[T[Shard][], T | number | undefined]>
 	private async updateHelper(
-		document: Filter<T> & Update<T> & Options & Document
+		document: model.Filter<T> & model.Update<T> & model.Document
+	): Promise<[T[Shard][], T | undefined]>
+	private async updateHelper(
+		document: model.Filter<T> & model.Update<T> & model.Options & model.Document
+	): Promise<[T[Shard][], T | undefined]>
+	private async updateHelper(document: model.Filter<T> & model.Update<T>): Promise<[T[Shard][], T | number | undefined]>
+	private async updateHelper(
+		document: model.Filter<T> & model.Update<T> & model.Options & model.Document
 	): Promise<[T[Shard][], T | number | undefined]> {
 		let result: T | number | undefined
 		let shards: T[Shard][] | undefined
-		const options = Options.extractOptions(document)
+		const options = model.Options.extractOptions(document)
 		const filter: {
 			_id?: mongo.ObjectID
 			[property: string]: string | undefined | mongo.ObjectID
 		} = this.fromDocument(Filter.toMongo(document, "id", this.shard))
-		const update: { $push?: { [field: string]: { $each: any[] } }; $set?: { [field: string]: any } } = Update.toMongo(
-			document,
-			"id",
-			this.shard
-		)
+		const update: {
+			$push?: { [field: string]: { $each: any[] } }
+			$set?: { [field: string]: any }
+		} = Update.toMongo(document, "id", this.shard)
 		if (filter._id) {
 			const updated = await this.backend.findOneAndUpdate(filter, update, {
 				returnOriginal: false,
@@ -157,19 +161,21 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 		return [shards ?? [], result]
 	}
 
-	async update(document: Filter<T> & Update<T> & Options & Document): Promise<T | undefined>
-	async update(document: Filter<T> & Update<T> & Document): Promise<T | undefined>
-	async update(document: Filter<T> & Update<T>): Promise<T | number | undefined>
-	async update(documents: (Filter<T> & Update<T> & Options & Document)[]): Promise<T[]>
+	async update(document: model.Filter<T> & model.Update<T> & model.Options & model.Document): Promise<T | undefined>
+	async update(document: model.Filter<T> & model.Update<T> & model.Document): Promise<T | undefined>
+	async update(document: model.Filter<T> & model.Update<T>): Promise<T | number | undefined>
+	async update(documents: (model.Filter<T> & model.Update<T> & model.Options & model.Document)[]): Promise<T[]>
 	async update(
-		documents: (Filter<T> & Update<T> & Options) | (Filter<T> & Update<T> & Options)[]
+		documents:
+			| (model.Filter<T> & model.Update<T> & model.Options)
+			| (model.Filter<T> & model.Update<T> & model.Options)[]
 	): Promise<T | number | undefined | T[]> {
 		let result: [T[Shard][], T | undefined | T[] | number]
 		if (Array.isArray(documents))
 			if (documents.length > 0)
 				result = (await Promise.all(documents.map(document => this.updateHelper(document)))).reduce<[T[Shard][], T[]]>(
 					(r, c) =>
-						Document.is(c[1])
+						model.Document.is(c[1])
 							? [
 									[...r[0], ...c[0]],
 									[...r[1], c[1]],
@@ -191,7 +197,7 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 	}
 
 	private toBase64(id: mongo.ObjectID): authly.Identifier {
-		return authly.Identifier.fromHexadecimal(id.toHexString().slice(24 - this.hexadecmialIdLength))
+		return authly.Identifier.fromHexadecimal(id.toHexString().slice(24 - this.hexadecimalIdLength))
 	}
 	private toBase16(id: authly.Identifier): mongo.ObjectID {
 		return new mongo.ObjectID(authly.Identifier.toHexadecimal(id).padStart(24, "0").slice(0, 24))
@@ -207,7 +213,7 @@ export class Collection<T extends Document, Shard extends keyof T & string> {
 		}
 		return result
 	}
-	private fromDocument(document: Partial<Document>): any {
+	private fromDocument(document: Partial<model.Document>): any {
 		const result: any = { ...document }
 		if (document.id)
 			result._id = new mongo.ObjectID(this.toBase16(document.id))

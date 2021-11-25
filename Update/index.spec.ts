@@ -1,18 +1,19 @@
-import * as persistly from "../index"
+import * as model from "persistly-model"
+import { Update } from "./index"
 
 describe("Update", () => {
 	it("toMongo", () => {
-		const argument: persistly.Update<{ name: string; field: number; property: { nested: number }; remove: number }> = {
+		const argument: model.Update<{ name: string; field: number; property: { nested: number }; remove: number }> = {
 			name: "test",
 			field: { $set: 1337 },
 			property: { nested: 42 },
 			remove: { $unset: true },
 		}
-		const filter = persistly.Update.toMongo(argument)
+		const filter = Update.toMongo(argument)
 		expect(filter).toEqual({ $set: { name: "test", field: 1337, "property.nested": 42 }, $unset: { remove: true } })
 	})
 	it("addToSet", () => {
-		const argument: persistly.Update<{
+		const argument: model.Update<{
 			name: string
 			field: number
 			property: { nested: number }
@@ -25,7 +26,7 @@ describe("Update", () => {
 			remove: { $unset: true },
 			event: { $addToSet: [1, 2] },
 		}
-		const filter = persistly.Update.toMongo(argument)
+		const filter = Update.toMongo(argument)
 		expect(filter).toEqual({
 			$set: { name: "test", field: 1337, "property.nested": 42 },
 			$unset: { remove: true },
@@ -33,33 +34,34 @@ describe("Update", () => {
 		})
 	})
 	it("testRemoval", () => {
-		const argument: persistly.Update<{ name: string; field: number; property: { nested: number }; remove: number }> = {
+		const argument: model.Update<{ name: string; field: number; property: { nested: number }; remove: number }> = {
 			name: "test",
 			field: { $set: null },
 			property: { nested: null },
 			remove: { $unset: true },
 		}
-		const filter = persistly.Update.toMongo(argument)
+		const filter = Update.toMongo(argument)
 		expect(filter).toEqual({ $set: { name: "test" }, $unset: { remove: true } })
 	})
-	it("test Clear", () => {
-		const arrayAction = {
-			$set: [
-				null,
-				undefined,
-				"foo",
-				123,
-				{ test: null, foo: undefined, bar: "foo", example: ["bar", null, undefined] },
-			],
+	it("Filter Update split", () => {
+		const argument = {
+			id: "ab01",
+			shard: { $eq: "shard01" },
+			field: { nested: { $eq: 42 }, $set: 1337 },
+			other: { value: 13.37 },
+			not: false,
+			name: "test",
+			property: { nested: 42 },
+			remove: { $unset: true },
+			filter: { $eq: 42 },
+			range: { $gt: 42, $lte: 1337 },
+			array: ["element0", "element1"],
 		}
-		expect(persistly.Update.Action.extract(arrayAction)).toEqual({
-			$set: ["foo", 123, { bar: "foo", example: ["bar"] }],
-		})
-		const objectAction = {
-			$set: { test: null, foo: undefined, bar: "foo", example: ["bar", null, undefined] },
-		}
-		expect(persistly.Update.Action.extract(objectAction)).toEqual({
-			$set: { bar: "foo", example: ["bar"] },
+		const update = Update.toMongo(argument, "id", "shard")
+		expect(update).toEqual({
+			$set: { name: "test", field: 1337, "property.nested": 42, "other.value": 13.37, not: false },
+			$unset: { remove: true },
+			$push: { array: { $each: ["element0", "element1"] } },
 		})
 	})
 })

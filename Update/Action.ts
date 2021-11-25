@@ -1,25 +1,7 @@
-export type Action<T> = {
-	$set?: T
-	$unset?: true
-	$push?: T
-	$addToSet?: T
-}
-
+import * as model from "persistly-model"
 export namespace Action {
-	export function is(value: any | Action<any>): value is Action<any> {
-		return (
-			typeof value == "object" &&
-			(value.$set != undefined || value.$unset != undefined || value.$push != undefined || value.$addToSet != undefined)
-		)
-	}
-	export type Operator = "$set" | "$unset" | "$push" | "$addToSet"
-	export namespace Operator {
-		export function is(value: any | Operator): value is Operator {
-			return typeof value == "string" && ["$set", "$unset", "$push", "$addToSet"].some(o => o == value)
-		}
-	}
-	export function extract<T>(action: Action<T> | any): Action<T> | undefined {
-		const result: Action<T> | undefined = is(action) ? {} : undefined
+	export function extract<T>(action: model.Update.Action<T> | any): model.Update.Action<T> | undefined {
+		const result: model.Update.Action<T> | undefined = model.Update.Action.is(action) ? {} : undefined
 		if (result) {
 			if ("$set" in action)
 				result.$set = clear(action.$set)

@@ -18,5 +18,9 @@
 		"eslint.autoFixOnSave": true,
 	},
 	"javascript.format.enable": false,
-	"typescript.format.enable": false
+	"typescript.format.enable": false,
+	"cSpell.words": [
+		"authly",
+		"persistly"
+	]
 }

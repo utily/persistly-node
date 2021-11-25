@@ -1,22 +1,19 @@
+import * as model from "persistly-model"
 import * as mongo from "mongodb"
-import { Document } from "../Document"
-import { Condition as FilterCondition } from "./Condition"
+import { Condition } from "./Condition"
 
-export type Filter<T> = {
-	[P in keyof T]?: FilterCondition<T[P]> | Filter<DeepPartial<T[P]>> | any
-}
 export namespace Filter {
 	export function toMongo<T>(
-		filter: Filter<T>,
+		filter: model.Filter<T>,
 		...prioritized: (string | undefined)[]
-	): mongo.QuerySelector<T> & Partial<Document> {
+	): mongo.QuerySelector<T> & Partial<model.Document> {
 		const result: any = {}
-		let field: keyof Filter<T>
+		let field: keyof model.Filter<T>
 		for (field in filter)
 			if (Object.prototype.hasOwnProperty.call(filter, field)) {
 				const value = filter[field]
-				const r = FilterCondition.is(value)
-					? FilterCondition.toMongo(value)
+				const r = model.Filter.Condition.is(value)
+					? Condition.toMongo(value)
 					: typeof value == "object"
 					? Filter.toMongo(value as any, prioritized?.[0] == "*" ? "*" : undefined)
 					: prioritized?.[0] == "*" || prioritized.some(p => p == field)
@@ -26,10 +23,6 @@ export namespace Filter {
 					result[field] = r
 			}
 		return toDotNotation(result)
-	}
-	export type Condition<T> = FilterCondition<T>
-	export namespace Condition {
-		export const extract = FilterCondition.extract
 	}
 }
 function toDotNotation(value: Record<string, any>): Record<string, any> {
@@ -45,7 +38,4 @@ function toDotNotation(value: Record<string, any>): Record<string, any> {
 			result[key] = value[key]
 	}
 	return result
-}
-type DeepPartial<T> = {
-	[P in keyof T]?: DeepPartial<T[P] | FilterCondition<T[P]>>
 }

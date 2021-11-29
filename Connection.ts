@@ -27,7 +27,7 @@ export class Connection implements model.Connection {
 	}
 }
 export namespace Connection {
-	export function open(url: string, database?: string): model.Connection {
+	export function open(url: string, database?: string): Connection {
 		return new Connection(Promise.resolve(url), database ? Promise.resolve(database) : undefined)
 	}
 }

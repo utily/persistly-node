@@ -8,11 +8,12 @@ import {
 	Options,
 	Update,
 } from "persistly-model"
+import { Collections } from "./Collections"
 import { Connection as NodeConnection } from "./Connection"
 import { Event } from "./Event"
 import { TestConnection } from "./TestConnection"
 
-export { Command, Document, Filter, Key, Options, Update, TestConnection }
+export { Command, Collections, Document, Filter, Key, Options, Update, TestConnection }
 
 export interface Collection<T extends Document, Shard extends keyof T & string> extends modelCollection<T> {
 	readonly updated: Event<T[Shard][]>

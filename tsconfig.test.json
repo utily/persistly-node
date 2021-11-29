@@ -12,6 +12,11 @@
 		"outDir": "dist",
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+		"alwaysStrict": true,
+		"strict": true,
+		"allowJs": true,
 		"plugins": [
 			{
 			"name": "typescript-tslint-plugin",

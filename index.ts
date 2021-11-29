@@ -22,7 +22,7 @@ export interface Connection extends modelConnection {
 	get<T extends Document, Shard extends keyof T & string>(
 		name: string,
 		shard: Shard,
-		idLength: 4 | 8 | 12 | 16
+		idLength?: 4 | 8 | 12 | 16
 	): Promise<Collection<T, Shard> | undefined>
 }
 export namespace Connection {

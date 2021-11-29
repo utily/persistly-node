@@ -33,6 +33,12 @@
 			"node_modules/",
 			"dist/"
 		],
+		"transform": {
+			"^.+\\.(j|t)sx?$": "ts-jest"
+		},
+		"transformIgnorePatterns": [
+			"<rootDir>/node_modules/(?!(persistly-model)/.*)"
+		],
 		"collectCoverageFrom": [
 			"**/*.{ts,tsx,js,jsx}",
 			"!**/node_modules/**",
@@ -57,7 +63,7 @@
 		"authly": "0.1.7",
 		"mongodb": "^3.5.8",
 		"mongodb-memory-server": "^6.6.1",
-		"persistly-model": "^0.0.5"
+		"persistly-model": "0.0.6"
 	},
 	"devDependencies": {
 		"@types/jest": "^26.0.0",

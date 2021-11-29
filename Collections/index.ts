@@ -9,7 +9,7 @@ export class Collections {
 	private constructor(
 		private readonly congfiguration: Collections.Configuration,
 		private readonly connection: persistly.Connection | undefined,
-		private readonly data?: Record<string, Record<string, any>[] | undefined>
+		private readonly data?: Record<string, any[] | undefined>
 	) {}
 	get<T extends model.Document, Shard extends keyof T & string>(
 		name: string
@@ -19,28 +19,27 @@ export class Collections {
 		const collection = this.collections[name]
 		return collection
 			? Promise.resolve(collection)
-			: (this.collections[name] =
-					this.connection && idLength
-						? this.connection.get<T, Shard>(name, shard, idLength).then(async c => {
-								if (c && this.data)
-									await c.create((this.data[name] ?? []) as T[])
-								if (c && (name == "order" || name == "log" || name == "account"))
-									c.updated.listen(async shards =>
-										(await this.get<Cache, "merchant">(this.congfiguration.cache))?.delete({
-											collection: name,
-											[this.congfiguration.collections[this.congfiguration.cache].shard]: { $in: shards },
-										})
-									)
-								return c
-						  })
-						: Promise.resolve(undefined))
+			: (this.collections[name] = this.connection
+					? this.connection.get<T, Shard>(name, shard, idLength).then(async c => {
+							if (c && this.data)
+								await c.create((this.data[name] ?? []) as T[])
+							if (c && this.congfiguration.cached.includes(name))
+								c.updated.listen(async shards =>
+									(await this.get<Cache, any>(this.congfiguration.cache))?.delete({
+										collection: name,
+										[this.congfiguration.collections[this.congfiguration.cache].shard]: { $in: shards },
+									})
+								)
+							return c
+					  })
+					: Promise.resolve(undefined))
 	}
 	async close(): Promise<void> {
 		if (this.connection)
 			await this.connection.close()
 	}
 	static connect(
-		url: string | undefined | Record<string, Record<string, any>[] | undefined>,
+		url: string | undefined | Record<string, any[] | undefined>,
 		configuration: Collections.Configuration
 	): Collections {
 		return typeof url == "string"

@@ -1,22 +1,38 @@
-import { Collections } from "./index"
-import * as orders from "./order.json"
+import * as persistly from "../index"
+import { orders } from "./order"
 
+jest.setTimeout(50000)
 describe("Collections", () => {
-	it("open non-existing", () => {
-		const connection = Collections.connect(
+	let testCollection: persistly.Collections
+	it("Connect test collection", async () => {
+		testCollection = persistly.Collections.connect(
 			{ order: orders },
-			{ collections: { order: { shard: "merchant", idLength: 8 } }, cache: "order", cached: ["order", "user"] }
+			{ collections: { order: { shard: "merchant", idLength: 16 } }, cache: "cache", cached: ["order"] }
 		)
-		expect(connection).toBeTruthy()
+		expect(testCollection).toBeTruthy()
 	})
-	// it("open real", async () => {
-	// 	const db = process.env.database
-	// 	if (db) {
-	// 		const connection = persistly.Connection.open(db)
-	// 		expect(connection).toBeTruthy()
-	// 		const merchant = await connection.get<{ id: string } & any, "id">("merchant", "id", 4)
-	// 		expect(merchant).toBeTruthy()
-	// 		await connection.close()
-	// 	}
-	// })
+	it("Test collection list orders", async () => {
+		const orderCollection = await testCollection.get("order")
+		const list = await orderCollection?.list()
+		expect(list).toStrictEqual(orders)
+	})
+	it("open real", async () => {
+		const db = process.env.database
+		if (db) {
+			const collection = persistly.Collections.connect(db, {
+				collections: { merchant: { shard: "id", idLength: 4 } },
+				cache: "cache",
+				cached: ["order"],
+			})
+			expect(collection).toBeTruthy()
+			const merchant = await collection.get<{ id: string } & any, "id">("merchant")
+			expect(merchant).toBeTruthy()
+			await collection.close()
+		}
+	})
+
+	afterAll(async done => {
+		await testCollection.close()
+		done()
+	})
 })

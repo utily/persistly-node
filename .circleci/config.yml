@@ -5,7 +5,7 @@ default: &default
     - image: circleci/node:12
 commands:
   prepare:
-    description: "Prepare working  directory"
+    description: "Prepare working directory"
     steps:
       - checkout
       - restore_cache:

@@ -63,7 +63,7 @@
 		"authly": "0.1.7",
 		"mongodb": "^3.5.8",
 		"mongodb-memory-server": "^6.6.1",
-		"persistly-model": "0.0.6"
+		"persistly-model": "github:utily/persistly-model#node-version"
 	},
 	"devDependencies": {
 		"@types/jest": "^26.0.0",

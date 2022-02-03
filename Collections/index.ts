@@ -25,7 +25,7 @@ export class Collections {
 								await c.create((this.data[name] ?? []) as T[])
 							if (c && this.congfiguration.cached.includes(name))
 								c.updated.listen(async shards =>
-									(await this.get<Cache, any>(this.congfiguration.cache))?.delete({
+									(await this.get<model.Cache, any>(this.congfiguration.cache))?.delete({
 										collection: name,
 										[this.congfiguration.collections[this.congfiguration.cache].shard]: { $in: shards },
 									})
@@ -54,9 +54,4 @@ export namespace Collections {
 		cached: string[]
 		cache: string
 	}
-}
-export interface Cache {
-	id: authly.Identifier
-	collection: "order" | "log" | "account"
-	merchant: authly.Identifier
 }
